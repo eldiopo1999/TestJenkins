@@ -1,0 +1,28 @@
+pipeline {
+     agent any
+     	 environment {
+        AWS_ACCESS_KEY_ID  = credentials('jenkins-aws-secret-key-id')
+        AWS_SECRET_ACCESS_KEY = credentials('jenkins-aws-secret-access-key')
+     }
+     stages {
+         stage('SCM Checkout') {
+              steps {
+                 git(branch: 'master', credentialsId: 'b3c2043a-4576-428a-9f13-304d34384b59',  url: 'https://bitbucket.org/baobab-group/cicd-test.git')
+              }
+         }
+		 stage('Build') {
+               steps{
+				sh "mvn clean verify"
+			  }
+         }
+	
+		 stage('Code Quality Check') {
+               steps{
+				 withCredentials([string(credentialsId: 'sonarAcessToken', variable: 'SONARQUBETOKEN')]) {
+					sh "mvn sonar:sonar -Dsonar.login=$SONARQUBETOKEN -Dsonar.qualitygate.wait=true -Dsonar.host.url=${env.SONARQUBE_SERVER_URL}"
+				}
+				
+			  }
+         }
+}
+}
